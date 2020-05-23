@@ -7,17 +7,44 @@ class Response
     @allowed_methods = %w[GET POST OPTIONS]
   end
 
-  def handle_response(request, directory)
-    handle_data(request, directory)
-    @response =
-      "HTTP/1.1 #{@code}\r\n" \
-      "Content-Length: #{@data.size}\r\n" \
-      "\r\n" \
-      "#{@data}\r\n"
+  def handle_response(request, directory, database)
+    if handle_status_code_by_methods(request)
+      public_send('handle_get_response', request, directory)
+    else
+      if request.http_method.downcase.eql?('post')
+        public_send("handle_#{request.http_method.downcase}_response", request, database)
+      else
+        public_send("handle_#{request.http_method.downcase}_response", request, directory)
+      end
+    end
   end
 
   def send(session)
     session.write(@response)
+
+  end
+
+  def handle_get_response(request, directory)
+    handle_data(request, directory)
+    @response = "HTTP/1.1 #{@code}\r\n" \
+                "Content-Length: #{@data.size}\r\n" \
+                "\r\n" \
+                "#{@data}\r\n"
+  end
+
+  def handle_post_response(request, database)
+    handle_posted_data(request, database)
+    @response = "HTTP/1.1 201 Created\r\n" \
+                "Content-Length: 0"
+    puts @response
+  end
+
+  def handle_options_response(request, directory)
+    handle_data(request, directory)
+    @response = "HTTP/1.1 #{@code} OK\r\n" \
+                "Allow: #{@allowed_methods}\r\n" \
+                "Content-Length: 0"
+    puts @response
   end
 
   private
@@ -26,10 +53,15 @@ class Response
     @data = ''
     unless request.recourse.empty? || request.recourse.eql?('favicon.ico')
       path = File.dirname(__FILE__) + directory + request.recourse
-      handle_status_code_by_methods(request)
       handle_status_code_by_recourse(path)
       @data = File.binread(path) if recourse_exists?(path)
     end
+  end
+
+  def handle_posted_data(request, database)
+    posted_data = request.recourse.split('=')
+    database[posted_data.first[1..-1]] = posted_data.last
+    puts database
   end
 
   def recourse_exists?(path)

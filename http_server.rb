@@ -1,34 +1,23 @@
-# http_server.rb
-require 'socket'
-require 'rack'
-require 'rack/lobster'
-require 'optparse'
-require_relative 'request'
-require_relative 'response'
-
-
-server = TCPServer.new 5678
-directory = nil
-OptionParser.new do |parser|
-  parser.banner = 'Enter example:  ruby http_server.rb -d public'
-  parser.on('-d', '--directory=DIR') do |dir|
-    directory = dir
+class HttpServer
+  def initialize(port: 8080, directory:)
+    @server = TCPServer.new port
+    @directory = directory
+    @database = {}
   end
-end.parse!
-if directory.nil?
-  puts 'Enter recourse directory!'
-  return
-end
-while session = server.accept
-  request = Request.new(session)
-  puts request.request
-  puts request.headers
 
-  directory = '/' + directory + '/'
+  def run
+    while session = @server.accept
+      request = Request.new(session)
+      puts request.request
+      puts request.headers
 
-  response = Response.new
-  response.handle_response(request, directory)
-  response.send(session)
+      @directory = '/' + @directory + '/'
 
-  session.close
+      response = Response.new
+      response.handle_response(request, @directory, @database)
+      response.send(session)
+      puts "I'm here"
+      puts session.close.inspect
+    end
+  end
 end
