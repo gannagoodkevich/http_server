@@ -1,7 +1,4 @@
-# run.rb
 require 'socket'
-require 'rack'
-require 'rack/lobster'
 require 'optparse'
 require_relative 'request'
 require_relative 'response'
@@ -9,8 +6,8 @@ require_relative 'http_server'
 
 
 
-directory = nil
-port = nil
+directory = 'public'
+port = 8080
 OptionParser.new do |parser|
   parser.banner = 'Enter example:  ruby run.rb -d public'
   parser.on('-d', '--directory=DIR') do |dir|
@@ -20,14 +17,14 @@ OptionParser.new do |parser|
     port = p
   end
 end.parse!
-if directory.nil?
-  puts 'Enter recourse directory!'
-  return
-end
-if port.nil?
-  puts 'Enter recourse port!'
-  return
-end
+#if directory.nil?
+# puts 'Enter recourse directory!'
+# return
+#end
+#if port.nil?
+# puts 'Enter recourse port!'
+# return
+#end
 
 server = HttpServer.new(port: port, directory: directory)
 server.run

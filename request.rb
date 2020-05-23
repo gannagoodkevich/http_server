@@ -19,7 +19,6 @@ class Request
   end
 
   def http_method
-    puts request
     @request.first
   end
 end

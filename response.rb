@@ -1,9 +1,12 @@
 class Response
   STATUS_CODE_OK = 200
+  STATUS_CODE_CREATED = 201
   STATUS_CODE_NOT_FOUND = 404
   STATUS_CODE_NOT_ALLOWED = 405
+  STATUS_CODE_NOT_IMPLEMENTED = 501
 
-  def initialize
+  def initialize(session)
+    @session = session
     @allowed_methods = %w[GET POST OPTIONS]
   end
 
@@ -21,7 +24,6 @@ class Response
 
   def send(session)
     session.write(@response)
-
   end
 
   def handle_get_response(request, directory)
@@ -30,21 +32,22 @@ class Response
                 "Content-Length: #{@data.size}\r\n" \
                 "\r\n" \
                 "#{@data}\r\n"
+    @session.puts(@response)
   end
 
   def handle_post_response(request, database)
     handle_posted_data(request, database)
-    @response = "HTTP/1.1 201 Created\r\n" \
-                "Content-Length: 0"
-    puts @response
+    @response = "HTTP/1.1 #{@code}\r\n" \
+                "\r\n" \
+                "#{database}\r\n"
+    @session.puts(@response)
   end
 
   def handle_options_response(request, directory)
-    handle_data(request, directory)
-    @response = "HTTP/1.1 #{@code} OK\r\n" \
-                "Allow: #{@allowed_methods}\r\n" \
-                "Content-Length: 0"
-    puts @response
+    @response = "HTTP/1.1 #{@code}\r\n" \
+                "\r\n" \
+                "#{@allowed_methods}\r\n"
+    @session.puts(@response)
   end
 
   private
@@ -60,7 +63,12 @@ class Response
 
   def handle_posted_data(request, database)
     posted_data = request.recourse.split('=')
-    database[posted_data.first[1..-1]] = posted_data.last
+    if database.keys.include? posted_data.first[1..-1]
+      @code = STATUS_CODE_NOT_IMPLEMENTED
+    else
+      @code = STATUS_CODE_CREATED
+      database[posted_data.first[1..-1]] = posted_data.last
+    end
     puts database
   end
 
@@ -76,7 +84,6 @@ class Response
                 STATUS_CODE_NOT_FOUND
               end
     end
-    puts @code
   end
 
   def handle_status_code_by_methods(request)

@@ -1,23 +1,23 @@
 class HttpServer
-  def initialize(port: 8080, directory:)
+  def initialize(port:, directory:)
     @server = TCPServer.new port
     @directory = directory
     @database = {}
   end
 
   def run
-    while session = @server.accept
+    loop do
+      session = @server.accept
       request = Request.new(session)
+      puts("-------------------")
       puts request.request
       puts request.headers
 
       @directory = '/' + @directory + '/'
 
-      response = Response.new
+      response = Response.new(session)
       response.handle_response(request, @directory, @database)
-      response.send(session)
-      puts "I'm here"
-      puts session.close.inspect
+      session.close
     end
   end
 end
