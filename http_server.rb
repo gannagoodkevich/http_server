@@ -1,14 +1,36 @@
-# http_server.rb
-require 'socket'
-require 'rack'
-require 'rack/lobster'
+require 'logging'
 
-server = TCPServer.new 5678
+class HttpServer
+  def initialize(port:, directory:, log_file:)
+    @server = TCPServer.new port
+    @directory = directory
+    logger = Logging.logger['logger']
+    logger.add_appenders(
+        Logging.appenders.stdout,
+        Logging.appenders.file(log_file)
+    )
+    logger.level = :info
 
-while session = server.accept
-  request = session.gets
-  puts request
-  puts session.readpartial(2048)
+    @logger = logger
+    @database = {}
+  end
 
-  session.close
+  def run
+    loop do
+      session = @server.accept
+      request = Request.new(session)
+      @logger.info '-----REQUEST-TO-SERVER-----'
+      @logger.info request.request
+      @logger.info request.headers
+
+      @directory = '/' + @directory + '/'
+
+      response = Response.new
+      response.handle_response(request, @directory, @database)
+      @logger.info '-----RESPONSE-FROM-SERVER-----'
+      @logger.info response.response
+      response.send(session)
+      session.close
+    end
+  end
 end
