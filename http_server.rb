@@ -15,8 +15,9 @@ class HttpServer
 
       @directory = '/' + @directory + '/'
 
-      response = Response.new(session)
+      response = Response.new
       response.handle_response(request, @directory, @database)
+      response.send(session)
       session.close
     end
   end

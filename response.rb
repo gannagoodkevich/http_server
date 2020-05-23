@@ -5,8 +5,7 @@ class Response
   STATUS_CODE_NOT_ALLOWED = 405
   STATUS_CODE_NOT_IMPLEMENTED = 501
 
-  def initialize(session)
-    @session = session
+  def initialize
     @allowed_methods = %w[GET POST OPTIONS]
   end
 
@@ -32,7 +31,6 @@ class Response
                 "Content-Length: #{@data.size}\r\n" \
                 "\r\n" \
                 "#{@data}\r\n"
-    @session.puts(@response)
   end
 
   def handle_post_response(request, database)
@@ -40,14 +38,14 @@ class Response
     @response = "HTTP/1.1 #{@code}\r\n" \
                 "\r\n" \
                 "#{database}\r\n"
-    @session.puts(@response)
   end
 
   def handle_options_response(request, directory)
+    @code = 200
     @response = "HTTP/1.1 #{@code}\r\n" \
+                "Allow: #{@allowed_methods}\r\n" \
                 "\r\n" \
                 "#{@allowed_methods}\r\n"
-    @session.puts(@response)
   end
 
   private
